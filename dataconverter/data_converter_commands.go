@@ -6,9 +6,9 @@ import (
 	"net/http"
 	"os"
 
-	"github.com/gogo/protobuf/jsonpb"
 	"github.com/gorilla/websocket"
 	"github.com/urfave/cli/v2"
+	"google.golang.org/protobuf/encoding/protojson"
 
 	commonpb "go.temporal.io/api/common/v1"
 )
@@ -36,8 +36,7 @@ func processMessage(c *websocket.Conn) error {
 	}
 
 	var payload commonpb.Payload
-	err = jsonpb.UnmarshalString(payloadRequest.Payload, &payload)
-	if err != nil {
+	if err := protojson.Unmarshal([]byte(payloadRequest.Payload), &payload); err != nil {
 		return fmt.Errorf("invalid payload data: %w", err)
 	}
 

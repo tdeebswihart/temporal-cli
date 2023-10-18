@@ -88,7 +88,7 @@ func AddSearchAttributes(c *cli.Context) error {
 	for i := 0; i < len(typeStrs); i++ {
 		typeStr := typeStrs[i]
 
-		typeInt, err := common.StringToEnum(typeStr, enumspb.IndexedValueType_value)
+		typeInt, err := common.StringToEnum(typeStr, enumspb.IndexedValueType_shorthandValue)
 		if err != nil {
 			return fmt.Errorf("unable to parse search attribute type %s: %w", typeStr, err)
 		}

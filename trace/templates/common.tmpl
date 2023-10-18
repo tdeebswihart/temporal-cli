@@ -1,5 +1,5 @@
 {{ define "extras" }}
-{{- if .State.StartTime }}{{ faint "(" }}{{ duration .State.StartTime .State.CloseTime | faint }}
+{{- if .State.StartTime }}{{ faint "(" }}{{ duration .State.StartTime.AsTime .State.CloseTime.AsTime | faint }}
     {{- if gt (.State.GetAttempt) 1 }}{{ printf ", %d attempts" .State.GetAttempt | faint }}{{end}}
 {{- faint ")"}}{{ end }}
 {{- end }}

@@ -10,6 +10,7 @@ import (
 
 	"github.com/fatih/color"
 	"go.temporal.io/api/enums/v1"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 const (
@@ -124,14 +125,14 @@ func ShouldFoldStatus(foldStatus []enums.WorkflowExecutionStatus, noFold bool) f
 }
 
 // DiffDuration returns a string representing the difference it time between start and close (or start and now).
-func DiffDuration(start *time.Time, close *time.Time) string {
+func DiffDuration(start *timestamppb.Timestamp, close *timestamppb.Timestamp) string {
 	if start == nil {
 		return ""
 	}
 	if close != nil {
-		return FmtDuration(close.Sub(*start))
+		return FmtDuration(close.AsTime().Sub(start.AsTime()))
 	}
-	return fmt.Sprintf("%s ago", FmtDuration(time.Since(*start)))
+	return fmt.Sprintf("%s ago", FmtDuration(time.Since(start.AsTime())))
 }
 
 // FmtDuration produces a string for a given duration, rounding to the most reasonable timeframe.

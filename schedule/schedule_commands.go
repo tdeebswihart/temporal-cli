@@ -6,8 +6,12 @@ import (
 	"strings"
 	"time"
 
-	"github.com/gogo/protobuf/jsonpb"
 	"github.com/pborman/uuid"
+	"github.com/urfave/cli/v2"
+	"google.golang.org/protobuf/encoding/protojson"
+	"google.golang.org/protobuf/types/known/durationpb"
+	"google.golang.org/protobuf/types/known/timestamppb"
+
 	"github.com/temporalio/cli/client"
 	"github.com/temporalio/cli/common"
 	"github.com/temporalio/cli/dataconverter"
@@ -15,7 +19,6 @@ import (
 	"github.com/temporalio/tctl-kit/pkg/color"
 	"github.com/temporalio/tctl-kit/pkg/output"
 	"github.com/temporalio/tctl-kit/pkg/pager"
-	"github.com/urfave/cli/v2"
 	commonpb "go.temporal.io/api/common/v1"
 	enumspb "go.temporal.io/api/enums/v1"
 	schedpb "go.temporal.io/api/schedule/v1"
@@ -46,8 +49,8 @@ func scheduleBaseArgs(c *cli.Context) (
 
 func buildCalendarSpec(s string) (*schedpb.CalendarSpec, error) {
 	var cal schedpb.CalendarSpec
-	err := jsonpb.UnmarshalString(s, &cal)
-	if err != nil {
+
+	if err := protojson.Unmarshal([]byte(s), &cal); err != nil {
 		return nil, err
 	}
 	return &cal, nil
@@ -67,7 +70,7 @@ func buildIntervalSpec(s string) (*schedpb.IntervalSpec, error) {
 	if interval, err = timestamp.ParseDuration(parts[0]); err != nil {
 		return nil, err
 	}
-	return &schedpb.IntervalSpec{Interval: &interval, Phase: &phase}, nil
+	return &schedpb.IntervalSpec{Interval: durationpb.New(interval), Phase: durationpb.New(phase)}, nil
 }
 
 func buildScheduleSpec(c *cli.Context) (*schedpb.ScheduleSpec, error) {
@@ -158,7 +161,7 @@ func buildScheduleState(c *cli.Context) (*schedpb.ScheduleState, error) {
 }
 
 func getOverlapPolicy(c *cli.Context) (enumspb.ScheduleOverlapPolicy, error) {
-	i, err := common.StringToEnum(c.String(common.FlagOverlapPolicy), enumspb.ScheduleOverlapPolicy_value)
+	i, err := common.StringToEnum(c.String(common.FlagOverlapPolicy), enumspb.ScheduleOverlapPolicy_shorthandValue)
 	if err != nil {
 		return 0, err
 	}
@@ -443,10 +446,10 @@ func DescribeSchedule(c *cli.Context) error {
 		Info     *schedpb.ScheduleInfo
 
 		// more convenient copies of values from Info
-		NextRunTime       *time.Time
-		LastRunTime       *time.Time
+		NextRunTime       *timestamppb.Timestamp
+		LastRunTime       *timestamppb.Timestamp
 		LastRunExecution  *commonpb.WorkflowExecution
-		LastRunActualTime *time.Time
+		LastRunActualTime *timestamppb.Timestamp
 
 		Memo             map[string]string // json only
 		SearchAttributes map[string]string // json only
@@ -574,10 +577,10 @@ func ListSchedules(c *cli.Context) error {
 					Notes  string
 				}
 				Info struct {
-					NextRunTime       *time.Time
-					LastRunTime       *time.Time
+					NextRunTime       *timestamppb.Timestamp
+					LastRunTime       *timestamppb.Timestamp
 					LastRunExecution  *commonpb.WorkflowExecution
-					LastRunActualTime *time.Time
+					LastRunActualTime *timestamppb.Timestamp
 				}
 			}
 			info := sch.GetInfo()

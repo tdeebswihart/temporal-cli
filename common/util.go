@@ -15,10 +15,11 @@ import (
 	"time"
 
 	"github.com/fatih/color"
-	"github.com/gogo/protobuf/proto"
 	"github.com/temporalio/cli/headers"
 	tColor "github.com/temporalio/tctl-kit/pkg/color"
 	"github.com/urfave/cli/v2"
+	"google.golang.org/protobuf/proto"
+
 	commonpb "go.temporal.io/api/common/v1"
 	enumspb "go.temporal.io/api/enums/v1"
 	historypb "go.temporal.io/api/history/v1"

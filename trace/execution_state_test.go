@@ -30,10 +30,15 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/types/known/durationpb"
+	"google.golang.org/protobuf/types/known/timestamppb"
+
 	"go.temporal.io/api/common/v1"
 	"go.temporal.io/api/enums/v1"
 	"go.temporal.io/api/failure/v1"
 	"go.temporal.io/api/history/v1"
+	"go.temporal.io/api/temporalproto"
 )
 
 var events = map[string]*history.HistoryEvent{
@@ -277,7 +282,7 @@ var events = map[string]*history.HistoryEvent{
 		Attributes: &history.HistoryEvent_TimerStartedEventAttributes{
 			TimerStartedEventAttributes: &history.TimerStartedEventAttributes{
 				TimerId:            "20", // If TimerId is not set it'll be the same as EventId
-				StartToFireTimeout: NewDuration(time.Hour),
+				StartToFireTimeout: durationpb.New(time.Hour),
 			},
 		},
 	},
@@ -304,13 +309,8 @@ var events = map[string]*history.HistoryEvent{
 	},
 }
 
-func NewDuration(d time.Duration) *time.Duration {
-	return &d
-}
-
-func NewTime(d time.Duration) *time.Time {
-	t := time.Time{}.Add(d)
-	return &t
+func NewTime(d time.Duration) *timestamppb.Timestamp {
+	return timestamppb.New(time.Time{}.UTC().Add(d))
 }
 
 func TestExecutionState_UpdateWorkflow(t *testing.T) {
@@ -386,7 +386,7 @@ func TestExecutionState_UpdateWorkflow(t *testing.T) {
 			for _, event := range tt.events {
 				state.Update(event)
 			}
-			assert.Equal(t, tt.expectedState, state)
+			assert.True(t, temporalproto.DeepEqual(tt.expectedState, state))
 		})
 	}
 }
@@ -515,7 +515,7 @@ func TestExecutionState_UpdateActivities(t *testing.T) {
 			for _, event := range tt.events {
 				state.Update(event)
 			}
-			assert.Equal(t, tt.expectedChildren, state.ChildStates)
+			assert.True(t, temporalproto.DeepEqual(tt.expectedChildren, state.ChildStates))
 		})
 	}
 }
@@ -629,7 +629,7 @@ func TestExecutionState_UpdateChildWorkflows(t *testing.T) {
 			for _, event := range tt.events {
 				state.Update(event)
 			}
-			assert.Equal(t, tt.expectedChildren, state.ChildStates)
+			assert.True(t, temporalproto.DeepEqual(tt.expectedChildren, state.ChildStates))
 		})
 	}
 }
@@ -645,7 +645,7 @@ func TestExecutionState_UpdateTimers(t *testing.T) {
 				&TimerExecutionState{
 					Name:               "Timer (1h0m0s)",
 					TimerId:            "20",
-					StartToFireTimeout: NewDuration(time.Hour),
+					StartToFireTimeout: durationpb.New(time.Hour),
 					Status:             TIMER_STATUS_WAITING,
 				},
 			},
@@ -656,7 +656,7 @@ func TestExecutionState_UpdateTimers(t *testing.T) {
 				&TimerExecutionState{
 					Name:               "Timer (1h0m0s)",
 					TimerId:            "20",
-					StartToFireTimeout: NewDuration(time.Hour),
+					StartToFireTimeout: durationpb.New(time.Hour),
 					Status:             TIMER_STATUS_FIRED,
 				},
 			},
@@ -667,7 +667,7 @@ func TestExecutionState_UpdateTimers(t *testing.T) {
 				&TimerExecutionState{
 					Name:               "Timer (1h0m0s)",
 					TimerId:            "20",
-					StartToFireTimeout: NewDuration(time.Hour),
+					StartToFireTimeout: durationpb.New(time.Hour),
 					Status:             TIMER_STATUS_CANCELED,
 				},
 			},
@@ -691,8 +691,8 @@ func TestExecutionState_TimerExecutionStateImplementation(t *testing.T) {
 		Attempt    int32
 		Failure    *failure.Failure
 		RetryState enums.RetryState
-		Duration   *time.Duration
-		StartTime  *time.Time
+		Duration   *durationpb.Duration
+		StartTime  *timestamppb.Timestamp
 	}
 	tests := map[string]struct {
 		State    *TimerExecutionState
@@ -701,7 +701,7 @@ func TestExecutionState_TimerExecutionStateImplementation(t *testing.T) {
 		"waiting timer": {
 			State: &TimerExecutionState{
 				TimerId:            "12",
-				StartToFireTimeout: NewDuration(time.Hour),
+				StartToFireTimeout: durationpb.New(time.Hour),
 				Status:             TIMER_STATUS_WAITING,
 				StartTime:          NewTime(0),
 			},
@@ -716,7 +716,7 @@ func TestExecutionState_TimerExecutionStateImplementation(t *testing.T) {
 		"fired timer": {
 			State: &TimerExecutionState{
 				TimerId:            "12",
-				StartToFireTimeout: NewDuration(time.Hour),
+				StartToFireTimeout: durationpb.New(time.Hour),
 				Status:             TIMER_STATUS_FIRED,
 				StartTime:          NewTime(0),
 				CloseTime:          NewTime(time.Hour),
@@ -725,14 +725,14 @@ func TestExecutionState_TimerExecutionStateImplementation(t *testing.T) {
 				Attempt:    1,
 				Failure:    nil,
 				RetryState: 0,
-				Duration:   NewDuration(time.Hour),
+				Duration:   durationpb.New(time.Hour),
 				StartTime:  NewTime(0),
 			},
 		},
 		"canceled timer ": {
 			State: &TimerExecutionState{
 				TimerId:            "12",
-				StartToFireTimeout: NewDuration(time.Hour),
+				StartToFireTimeout: durationpb.New(time.Hour),
 				Status:             TIMER_STATUS_CANCELED,
 				StartTime:          NewTime(0),
 				CloseTime:          NewTime(30 * time.Minute),
@@ -741,7 +741,7 @@ func TestExecutionState_TimerExecutionStateImplementation(t *testing.T) {
 				Attempt:    1,
 				Failure:    nil,
 				RetryState: 0,
-				Duration:   NewDuration(30 * time.Minute),
+				Duration:   durationpb.New(30 * time.Minute),
 				StartTime:  NewTime(0),
 			},
 		},
@@ -749,7 +749,7 @@ func TestExecutionState_TimerExecutionStateImplementation(t *testing.T) {
 			State: &TimerExecutionState{
 				TimerId:            "12",
 				Name:               "TestTimer",
-				StartToFireTimeout: NewDuration(time.Hour),
+				StartToFireTimeout: durationpb.New(time.Hour),
 				Status:             TIMER_STATUS_WAITING,
 				StartTime:          NewTime(0),
 			},
@@ -768,10 +768,10 @@ func TestExecutionState_TimerExecutionStateImplementation(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			assert.Equal(t, tt.Expected.Name, tt.State.GetName(), "GetName")
 			assert.Equal(t, tt.Expected.Attempt, tt.State.GetAttempt(), "GetAttempt")
-			assert.Equal(t, tt.Expected.Failure, tt.State.GetFailure(), "GetFailure")
+			assert.True(t, proto.Equal(tt.Expected.Failure, tt.State.GetFailure()), "GetFailure (expected %#v, got %#v)", tt.Expected.Failure, tt.State.GetFailure())
 			assert.Equal(t, tt.Expected.RetryState, tt.State.GetRetryState(), "GetRetryState")
-			assert.Equal(t, tt.Expected.Duration, tt.State.GetDuration(), fmt.Sprintf("GetDuration missmatch (expected %s, got %s)", tt.Expected.Duration, tt.State.GetDuration()))
-			assert.Equal(t, tt.Expected.StartTime, tt.State.GetStartTime(), "GetStartTime")
+			assert.Equal(t, tt.Expected.Duration.AsDuration(), tt.State.GetDuration().AsDuration(), fmt.Sprintf("GetDuration missmatch (expected %s, got %s)", tt.Expected.Duration, tt.State.GetDuration()))
+			assert.Equal(t, tt.Expected.StartTime.AsTime(), tt.State.GetStartTime().AsTime(), "GetStartTime")
 		})
 	}
 }

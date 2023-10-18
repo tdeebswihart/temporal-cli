@@ -26,13 +26,15 @@ package trace
 
 import (
 	"fmt"
+	"strconv"
+	"sync"
+
 	"go.temporal.io/api/common/v1"
 	"go.temporal.io/api/enums/v1"
 	"go.temporal.io/api/failure/v1"
 	"go.temporal.io/api/history/v1"
-	"strconv"
-	"sync"
-	"time"
+	"google.golang.org/protobuf/types/known/durationpb"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 // ExecutionState provides a common interface to any execution (Workflows, Activities and Timers in this case) updated through HistoryEvents.
@@ -48,8 +50,8 @@ type ExecutionState interface {
 	// GetRetryState returns the execution's RetryState.
 	GetRetryState() enums.RetryState
 
-	GetDuration() *time.Duration
-	GetStartTime() *time.Time
+	GetDuration() *durationpb.Duration
+	GetStartTime() *timestamppb.Timestamp
 }
 
 // WorkflowExecutionState is a snapshot of the state of a WorkflowExecution. It is updated through HistoryEvents.
@@ -59,9 +61,9 @@ type WorkflowExecutionState struct {
 	// Type is the name/type of Workflow.
 	Type *common.WorkflowType
 	// StartTime is the time the Execution was started (based on the first Execution's Event).
-	StartTime *time.Time
+	StartTime *timestamppb.Timestamp
 	// CloseTime is the time the Execution was closed (based on the first Execution's Event). Will be nil if the Execution hasn't been closed yet.
-	CloseTime *time.Time
+	CloseTime *timestamppb.Timestamp
 	// Status is the Execution's Status based on the last event that was processed.
 	Status enums.WorkflowExecutionStatus
 	// IsArchived will be true if the workflow has been archived.
@@ -99,7 +101,7 @@ type WorkflowExecutionState struct {
 
 	// Timeout and retry policies
 	// WorkflowExecutionTimeout contains the Workflow Execution's timeout if it has been set.
-	WorkflowExecutionTimeout *time.Duration
+	WorkflowExecutionTimeout *durationpb.Duration
 	// Attempt contains the current Workflow Execution's attempt.
 	Attempt int32
 	// MaximumAttempts contains the maximum number of times the Workflow Execution is allowed to retry before failing.
@@ -131,11 +133,11 @@ func (state *WorkflowExecutionState) GetRetryState() enums.RetryState {
 	return state.RetryState
 }
 
-func (state *WorkflowExecutionState) GetStartTime() *time.Time {
+func (state *WorkflowExecutionState) GetStartTime() *timestamppb.Timestamp {
 	return state.StartTime
 }
 
-func (state *WorkflowExecutionState) GetDuration() *time.Duration {
+func (state *WorkflowExecutionState) GetDuration() *durationpb.Duration {
 	return getDuration(state.StartTime, state.CloseTime)
 }
 
@@ -439,9 +441,9 @@ type ActivityExecutionState struct {
 	RetryState enums.RetryState
 
 	// StartTime is the time the Execution was started (based on the start Event).
-	StartTime *time.Time
+	StartTime *timestamppb.Timestamp
 	// CloseTime is the time the Execution was closed (based on the closing Event). Will be nil if the Execution hasn't been closed yet.
-	CloseTime *time.Time
+	CloseTime *timestamppb.Timestamp
 }
 
 func NewActivityExecutionState() *ActivityExecutionState {
@@ -466,11 +468,11 @@ func (state *ActivityExecutionState) GetRetryState() enums.RetryState {
 	return state.RetryState
 }
 
-func (state *ActivityExecutionState) GetStartTime() *time.Time {
+func (state *ActivityExecutionState) GetStartTime() *timestamppb.Timestamp {
 	return state.StartTime
 }
 
-func (state *ActivityExecutionState) GetDuration() *time.Duration {
+func (state *ActivityExecutionState) GetDuration() *durationpb.Duration {
 	return getDuration(state.StartTime, state.CloseTime)
 }
 
@@ -532,13 +534,13 @@ type TimerExecutionState struct {
 	// Name is the name of the Timer (if any has been given to it)
 	Name string
 	// StartToFireTimeout is the amount of time to elapse before the timer fires.
-	StartToFireTimeout *time.Duration
+	StartToFireTimeout *durationpb.Duration
 	// Status is the Execution's Status based on the last event that was processed.
 	Status TimerExecutionStatus
 	// StartTime is the time the Execution was started (based on the start Event).
-	StartTime *time.Time
+	StartTime *timestamppb.Timestamp
 	// CloseTime is the time the Execution was closed (based on the closing Event). Will be nil if the Execution hasn't been closed yet.
-	CloseTime *time.Time
+	CloseTime *timestamppb.Timestamp
 }
 
 // TimerExecutionStatus is the Status of a TimerExecution, analogous to enums.WorkflowExecutionStatus.
@@ -592,20 +594,19 @@ func (t *TimerExecutionState) GetRetryState() enums.RetryState {
 	return enums.RETRY_STATE_UNSPECIFIED
 }
 
-func (t *TimerExecutionState) GetDuration() *time.Duration {
+func (t *TimerExecutionState) GetDuration() *durationpb.Duration {
 	return getDuration(t.StartTime, t.CloseTime)
 }
 
-func (t *TimerExecutionState) GetStartTime() *time.Time {
+func (t *TimerExecutionState) GetStartTime() *timestamppb.Timestamp {
 	return t.StartTime
 }
 
 // Utilities
 // getDuration converts a start and completed time to a duration.
-func getDuration(started, completed *time.Time) *time.Duration {
+func getDuration(started, completed *timestamppb.Timestamp) *durationpb.Duration {
 	if started == nil || completed == nil {
 		return nil
 	}
-	duration := completed.Sub(*started)
-	return &duration
+	return durationpb.New(completed.AsTime().Sub(started.AsTime()))
 }

@@ -66,7 +66,7 @@ func (s *stringifySuite) TestAnyToString() {
 	res := AnyToString(event, false, 500, dataConverter)
 	ss, l := tablewriter.WrapString(res, 10)
 	s.Equal(7, len(ss))
-	s.Equal(105, l)
+	s.Equal(96, l)
 }
 
 func (s *stringifySuite) TestAnyToString_DecodeMapValues() {

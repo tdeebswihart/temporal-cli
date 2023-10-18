@@ -242,6 +242,6 @@ func breakLongWords(input string, maxWordLength int) string {
 
 func isAttributeName(name string) bool {
 	eventType := strings.TrimSuffix(name, "EventAttributes")
-	_, ok := enumspb.EventType_value[eventType]
-	return ok
+	_, err := enumspb.EventTypeFromString(eventType)
+	return err == nil
 }

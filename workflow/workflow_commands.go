@@ -96,7 +96,7 @@ func StartWorkflow(c *cli.Context, printProgress bool) error {
 
 	reusePolicy := common.DefaultWorkflowIDReusePolicy
 	if c.IsSet(common.FlagWorkflowIDReusePolicy) {
-		reusePolicyInt, err := common.StringToEnum(c.String(common.FlagWorkflowIDReusePolicy), enumspb.WorkflowIdReusePolicy_value)
+		reusePolicyInt, err := common.StringToEnum(c.String(common.FlagWorkflowIDReusePolicy), enumspb.WorkflowExecutionStatus_shorthandValue)
 		if err != nil {
 			return fmt.Errorf("unable to parse workflow ID reuse policy: %w", err)
 		}
@@ -919,7 +919,7 @@ func ResetWorkflow(c *cli.Context) error {
 	return nil
 }
 
-func processResets(c *cli.Context, namespace string, wes chan commonpb.WorkflowExecution, done chan bool, wg *sync.WaitGroup, params batchResetParamsType) {
+func processResets(c *cli.Context, namespace string, wes chan *commonpb.WorkflowExecution, done chan bool, wg *sync.WaitGroup, params batchResetParamsType) {
 	for {
 		select {
 		case we := <-wes:
@@ -997,7 +997,7 @@ func ResetInBatch(c *cli.Context) error {
 
 	wg := &sync.WaitGroup{}
 
-	wes := make(chan commonpb.WorkflowExecution)
+	wes := make(chan *commonpb.WorkflowExecution)
 	done := make(chan bool)
 	for i := 0; i < parallel; i++ {
 		wg.Add(1)
@@ -1066,7 +1066,7 @@ func ResetInBatch(c *cli.Context) error {
 				continue
 			}
 
-			wes <- commonpb.WorkflowExecution{
+			wes <- &commonpb.WorkflowExecution{
 				WorkflowId: wid,
 				RunId:      rid,
 			}
@@ -1099,7 +1099,7 @@ func ResetInBatch(c *cli.Context) error {
 					continue
 				}
 
-				wes <- commonpb.WorkflowExecution{
+				wes <- &commonpb.WorkflowExecution{
 					WorkflowId: wid,
 					RunId:      rid,
 				}
@@ -1556,7 +1556,7 @@ func ParseFoldStatusList(flagValue string) ([]enumspb.WorkflowExecutionStatus, e
 
 func listWorkflowExecutionStatusNames() string {
 	var names []string
-	for _, name := range enumspb.WorkflowExecutionStatus_name {
+	for name, _ := range enumspb.WorkflowExecutionStatus_shorthandValue {
 		names = append(names, strings.ToLower(name))
 	}
 	return strings.Join(names, ", ")
@@ -1565,7 +1565,7 @@ func listWorkflowExecutionStatusNames() string {
 // findWorkflowStatusValue finds a WorkflowExecutionStatus by its name. This search is case-insensitive.
 func findWorkflowStatusValue(name string) (enumspb.WorkflowExecutionStatus, bool) {
 	lowerName := strings.ToLower(name)
-	for key, value := range enumspb.WorkflowExecutionStatus_value {
+	for key, value := range enumspb.WorkflowExecutionStatus_shorthandValue {
 		if lowerName == strings.ToLower(key) {
 			return enumspb.WorkflowExecutionStatus(value), true
 		}

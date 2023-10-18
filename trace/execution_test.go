@@ -9,6 +9,8 @@ import (
 
 	"github.com/stretchr/testify/require"
 	"go.temporal.io/api/common/v1"
+	"google.golang.org/protobuf/types/known/durationpb"
+	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/stretchr/testify/assert"
 	"go.temporal.io/api/enums/v1"
@@ -21,16 +23,12 @@ var foldStatus = []enums.WorkflowExecutionStatus{
 	enums.WORKFLOW_EXECUTION_STATUS_CONTINUED_AS_NEW,
 }
 
-func GetRelativeTime(d time.Duration) *time.Time {
+func GetRelativeTime(d time.Duration) *timestamppb.Timestamp {
 	startTime := time.Date(2009, time.November, 10, 23, 0, 0, 0, time.UTC)
 	if d > 0 {
 		startTime = startTime.Add(d)
 	}
-	return &startTime
-}
-
-func GetDuration(d time.Duration) *time.Duration {
-	return &d
+	return timestamppb.New(startTime)
 }
 
 func TestExecuteWorkflowTemplate(t *testing.T) {
@@ -113,7 +111,7 @@ func TestExecuteWorkflowTemplate(t *testing.T) {
 		},
 		"timer": {
 			state: &TimerExecutionState{
-				StartToFireTimeout: GetDuration(time.Hour),
+				StartToFireTimeout: durationpb.New(time.Hour),
 				Status:             TIMER_STATUS_CANCELED,
 				Name:               "Timer (1h0m0s)",
 				StartTime:          GetRelativeTime(0),

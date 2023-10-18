@@ -99,7 +99,7 @@ func BuildIDAddNewDefault(c *cli.Context) error {
 			AddNewBuildIdInNewDefaultSet: newBuildID,
 		},
 	}
-	return updateBuildIDs(c, operation)
+	return updateBuildIDs(c, &operation)
 }
 
 // BuildIDAddNewCompatible implements the `update-build-ids add-new-compatible` subcommand
@@ -116,7 +116,7 @@ func BuildIDAddNewCompatible(c *cli.Context) error {
 			},
 		},
 	}
-	return updateBuildIDs(c, operation)
+	return updateBuildIDs(c, &operation)
 }
 
 // BuildIDPromoteSet implements the `update-build-ids promote-set` subcommand
@@ -127,7 +127,7 @@ func BuildIDPromoteSet(c *cli.Context) error {
 			PromoteSetByBuildId: buildID,
 		},
 	}
-	return updateBuildIDs(c, operation)
+	return updateBuildIDs(c, &operation)
 }
 
 // BuildIDPromoteInSet implements the `update-build-ids promote-id-in-set` subcommand
@@ -138,7 +138,7 @@ func BuildIDPromoteInSet(c *cli.Context) error {
 			PromoteBuildIdWithinSet: buildID,
 		},
 	}
-	return updateBuildIDs(c, operation)
+	return updateBuildIDs(c, &operation)
 }
 
 // GetBuildIDs is implements the `get-build-ids` subcommand
@@ -248,7 +248,7 @@ func GetBuildIDReachability(c *cli.Context) error {
 
 // updateBuildIDs manipulates the build ids of a given taskqueue. `partialReq` is a partial request
 // containing only the operation field filled out.
-func updateBuildIDs(c *cli.Context, partialReq workflowservice.UpdateWorkerBuildIdCompatibilityRequest) error {
+func updateBuildIDs(c *cli.Context, partialReq *workflowservice.UpdateWorkerBuildIdCompatibilityRequest) error {
 	frontendClient := client.Factory(c.App).FrontendClient(c)
 	namespace, err := common.RequiredFlag(c, common.FlagNamespace)
 	if err != nil {
