@@ -562,9 +562,9 @@ func (t *TimerExecutionState) Update(event *history.HistoryEvent) {
 		t.TimerId = attrs.TimerId
 		if attrs.TimerId != strconv.FormatInt(event.EventId, 10) {
 			// If the user has set a custom id, we can use it for the name
-			t.Name = fmt.Sprintf("%s (%s)", attrs.TimerId, t.StartToFireTimeout.String())
+			t.Name = fmt.Sprintf("%s (%s)", attrs.TimerId, t.StartToFireTimeout.AsDuration().String())
 		} else {
-			t.Name = fmt.Sprintf("Timer (%s)", t.StartToFireTimeout.String())
+			t.Name = fmt.Sprintf("Timer (%s)", t.StartToFireTimeout.AsDuration().String())
 		}
 		t.Status = TIMER_STATUS_WAITING
 		t.StartTime = event.EventTime

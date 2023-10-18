@@ -29,7 +29,10 @@ import (
 	"testing"
 	"time"
 
+	"github.com/google/go-cmp/cmp"
 	"github.com/stretchr/testify/assert"
+	"google.golang.org/protobuf/testing/protocmp"
+
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/durationpb"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -680,7 +683,9 @@ func TestExecutionState_UpdateTimers(t *testing.T) {
 			for _, event := range tt.events {
 				state.Update(event)
 			}
-			assert.Equal(t, tt.expectedChildren, state.ChildStates)
+			if diff := cmp.Diff(tt.expectedChildren, state.ChildStates, protocmp.Transform()); diff != "" {
+				assert.Fail(t, "Mismatch (-want +got):\n", diff)
+			}
 		})
 	}
 }

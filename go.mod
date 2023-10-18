@@ -8,6 +8,7 @@ replace (
 	go.temporal.io/api => ../my-api-go
 	go.temporal.io/sdk => ../my-sdk-go
 	go.temporal.io/server => ../my-temporal
+	go.temporal.io/ui-server => ../my-ui-server
 )
 
 require (
